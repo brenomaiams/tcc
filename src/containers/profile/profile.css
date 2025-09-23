@@ -16,6 +16,18 @@
   margin-bottom: 30px;
 }
 
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
 
 .profile-field {
   display: flex;

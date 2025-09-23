@@ -10,11 +10,6 @@ import whatsappClient from "./whatsapp.js";
 
 const app = express();
 const port = 3001;
-
-
-
-
-
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -22,8 +17,8 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "123456",
-  database: "tccpraga"
+  password: "123456789",
+  database: "praga"
 });
 
 db.connect(err => {
@@ -44,6 +39,7 @@ app.post("/register", async (req, res) => {
     const sql = "INSERT INTO users (name, email, password, phone) VALUES (?, ?, ?, ?)";
     db.query(sql, [name, email, hashedPassword, phone], (err, result) => {
       if (err) {
+        console.log("Erro no MySQL:", err);
         if (err.code === "ER_DUP_ENTRY") {
           return res.status(400).json({ message: "Email ou telefone já cadastrado!" });
         }

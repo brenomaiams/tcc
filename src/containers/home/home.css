@@ -1,18 +1,31 @@
-.home-container {
-  padding: 2rem;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #f0f4f8;
-  min-height: 100vh;
-  color: #333;
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
 }
 
+.home-container {
+  min-height: 100vh;
+  width: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: url("../../assets/fundo green.png") no-repeat center center fixed;
+  background-size: cover; /* garante que a imagem cobre tudo */
+  color: #333;
+
+  /* layout */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
 .home-header {
   position: relative;      
   display: flex;
   justify-content: center;  
   align-items: center;
   margin-bottom: 3rem;
-  padding: 0 2rem;
+  padding: 2rem;
 }
 
 .welcome-text {
@@ -22,7 +35,6 @@
   text-align: center;
 }
 
-
 .avatar-container {
   position: absolute; 
   right: 2rem;        
@@ -31,8 +43,8 @@
 }
 
 .avatar {
-  width: 60px;
-  height: 60px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.2s;
@@ -41,7 +53,6 @@
 .avatar:hover {
   transform: scale(1.05);
 }
-
 
 .profile-dropdown {
   position: absolute;
@@ -72,7 +83,7 @@
   background-color: #f0f0f0;
 }
 
-
+/* Botão de upload */
 .file-label {
   display: inline-block;
   padding: 0.7rem 1.5rem;
@@ -99,14 +110,14 @@
   color: #1c3e15;
 }
 
-
+/* Conteúdo principal */
 .home-main {
   display: flex;
   flex-direction: column; 
   gap: 2rem;
   align-items: center; 
+  padding: 2rem;
 }
-
 
 .home-section {
   width: 100%;       
@@ -123,13 +134,12 @@
   transform: translateY(-5px);
 }
 
-
 .home-section h2 {
   margin-bottom: 1rem;
   color: #000000;
 }
 
-/* Input file estilizado */
+/* Input estilizado */
 .file-input {
   width: 100%;
   padding: 0.6rem;

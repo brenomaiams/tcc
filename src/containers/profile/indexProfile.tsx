@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react"; 
 import "./profile.css";
 
 const Profile: React.FC = () => {
@@ -23,7 +24,7 @@ const Profile: React.FC = () => {
 
   const handleEditClick = (field: string) => {
     if (field === "password") {
-      setShowPhoneModal(true); 
+      setShowPhoneModal(true);
     } else {
       setEditingField(field);
       setNewValue(user[field as keyof typeof user] || "");
@@ -32,14 +33,24 @@ const Profile: React.FC = () => {
 
   const handleSaveField = async (field: string) => {
     try {
-      const res = await fetch("http://localhost:3001/update-profile", {
+      const currentPassword = prompt("Digite sua senha atual para confirmar:");
+      if (!currentPassword) return alert("Senha é obrigatória para atualizar!");
+
+      const res = await fetch("http://localhost:3001/update-user", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ field, value: newValue }),
+        body: JSON.stringify({
+          email: user.email,
+          field,
+          value: newValue,
+          password: currentPassword,
+        }),
       });
+
       const data = await res.json();
       if (res.ok) {
         setUser((prev) => ({ ...prev, [field]: newValue }));
+        localStorage.setItem("user", JSON.stringify({ ...user, [field]: newValue }));
         setEditingField(null);
         alert("Atualizado com sucesso!");
       } else {
@@ -51,40 +62,44 @@ const Profile: React.FC = () => {
     }
   };
 
-const handlePhoneModalSubmit = async () => {
-  if (!phone) return alert("Digite seu telefone");
+  const handlePhoneModalSubmit = async () => {
+    if (!phone) return alert("Digite seu telefone");
 
-  try {
-    const res = await fetch("http://localhost:3001/request-password-code", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
-    });
+    try {
+      const res = await fetch("http://localhost:3001/request-password-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
 
-    const data = await res.json();
-    if (!res.ok) {
-      return alert(data.message || "Erro ao enviar código");
+      const data = await res.json();
+      if (!res.ok) {
+        return alert(data.message || "Erro ao enviar código");
+      }
+
+      localStorage.setItem("phoneForPasswordChange", phone);
+
+      alert("Código enviado por WhatsApp!");
+      setShowPhoneModal(false);
+
+      navigate("/changepasswordcode");
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao enviar WhatsApp");
     }
-
-    
-    localStorage.setItem("phoneForPasswordChange", phone);
-
-    alert("Código enviado por SMS!");
-    setShowPhoneModal(false);
-
-    navigate("/changepasswordcode");
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao enviar SMS");
-  }
-};
-
+  };
 
   return (
     <div className="profile-container">
-      <div className="profile-card">
+      {/* Header com botão de voltar */}
+      <div className="profile-header">
+        <button className="back-button" onClick={() => navigate("/home")}>
+          <ArrowLeft size={24} /> {/* ícone */}
+        </button>
         <h1>Perfil</h1>
+      </div>
 
+      <div className="profile-card">
         <div className="profile-field">
           <label>Nome:</label>
           {editingField === "name" ? (
@@ -124,7 +139,6 @@ const handlePhoneModalSubmit = async () => {
         </div>
       </div>
 
-      
       {showPhoneModal && (
         <div className="modal-overlay">
           <div className="modal-content">
