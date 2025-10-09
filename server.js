@@ -1,4 +1,4 @@
-
+// server.js
 import express from "express";
 import mysql from "mysql2";
 import cors from "cors";
@@ -6,14 +6,22 @@ import bodyParser from "body-parser";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import whatsappClient from "./whatsapp.js";
-
+import multer from "multer";
+import { exec } from "child_process";
+import path from "path";
+import fs from "fs";
 
 const app = express();
 const port = 3001;
+
+// -------------------- MIDDLEWARE --------------------
 app.use(cors());
 app.use(bodyParser.json());
 
+// Upload temporário
+const upload = multer({ dest: "uploads/" });
 
+// -------------------- BANCO DE DADOS --------------------
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -29,7 +37,6 @@ db.connect(err => {
 // -------------------- REGISTRO --------------------
 app.post("/register", async (req, res) => {
   const { name, email, password, phone } = req.body;
-
   if (!name || !email || !password || !phone) {
     return res.status(400).json({ message: "Preencha todos os campos!" });
   }
@@ -37,9 +44,8 @@ app.post("/register", async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const sql = "INSERT INTO users (name, email, password, phone) VALUES (?, ?, ?, ?)";
-    db.query(sql, [name, email, hashedPassword, phone], (err, result) => {
+    db.query(sql, [name, email, hashedPassword, phone], (err) => {
       if (err) {
-        console.log("Erro no MySQL:", err);
         if (err.code === "ER_DUP_ENTRY") {
           return res.status(400).json({ message: "Email ou telefone já cadastrado!" });
         }
@@ -47,7 +53,7 @@ app.post("/register", async (req, res) => {
       }
       res.json({ message: "Usuário registrado com sucesso!" });
     });
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: "Erro ao registrar usuário" });
   }
 });
@@ -73,12 +79,10 @@ app.post("/login", (req, res) => {
 // -------------------- ATUALIZAR DADOS --------------------
 app.put("/update-user", async (req, res) => {
   const { email, field, value, password } = req.body;
-
   if (!email || !field || !value || !password) {
     return res.status(400).json({ message: "Dados incompletos!" });
   }
 
-  // Verifica senha
   db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
     if (err) return res.status(500).json({ message: "Erro no servidor" });
     if (results.length === 0) return res.status(400).json({ message: "Usuário não encontrado" });
@@ -87,7 +91,6 @@ app.put("/update-user", async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ message: "Senha incorreta!" });
 
-    // Atualiza campo
     db.query(`UPDATE users SET ${field} = ? WHERE email = ?`, [value, email], (err2) => {
       if (err2) return res.status(500).json({ message: "Erro ao atualizar" });
       res.json({ message: `${field} atualizado com sucesso!` });
@@ -101,25 +104,18 @@ app.post("/request-password-code", (req, res) => {
   if (!phone) return res.status(400).json({ message: "Telefone é obrigatório" });
 
   const code = Math.floor(1000 + Math.random() * 9000).toString();
-
- 
   let digits = phone.replace(/\D/g, "");
-
-  
-  if (!digits.startsWith("55")) {
-    digits = "55" + digits;
-  }
+  if (!digits.startsWith("55")) digits = "55" + digits;
 
   db.query(
     "UPDATE users SET sms_code = ? WHERE REPLACE(phone, '\\D', '') LIKE ?",
-    [code, `%${digits.slice(-11)}`],   
+    [code, `%${digits.slice(-11)}`],
     async (err) => {
       if (err) return res.status(500).json({ message: "Erro no servidor" });
 
       console.log(`Código enviado para ${digits}: ${code}`);
-
       try {
-        const numeroFormatado = `${digits}@c.us`;  
+        const numeroFormatado = `${digits}@c.us`;
         await whatsappClient.sendMessage(numeroFormatado, `🔐 Seu código de verificação é: ${code}`);
         res.json({ message: "Código enviado com sucesso via WhatsApp!" });
       } catch (wppErr) {
@@ -129,14 +125,6 @@ app.post("/request-password-code", (req, res) => {
     }
   );
 });
-
-
-
-
-
-
-
-
 
 // -------------------- VERIFICAÇÃO DO CÓDIGO --------------------
 app.post("/verify-password-code", (req, res) => {
@@ -150,12 +138,9 @@ app.post("/verify-password-code", (req, res) => {
     const user = results[0];
     if (user.sms_code !== code) return res.status(400).json({ message: "Código incorreto" });
 
-    
     res.json({ message: "Código válido" });
   });
 });
-
-
 
 // -------------------- ALTERAR SENHA --------------------
 app.put("/update-password-by-phone", async (req, res) => {
@@ -179,7 +164,38 @@ app.put("/update-password-by-phone", async (req, res) => {
   }
 });
 
+// -------------------- ANÁLISE DE PRAGAS --------------------
+app.post("/analisar", upload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ erro: "Nenhum arquivo enviado" });
 
+  const filePath = path.resolve(req.file.path);
+  console.log("Caminho do arquivo:", filePath);
+
+  exec(`python "ml_model/pragas.py" "${filePath}"`, (error, stdout, stderr) => {
+    fs.unlinkSync(filePath); // Remove arquivo temporário
+
+    // Filtra warnings do TensorFlow
+    const filteredStderr = stderr
+      .split("\n")
+      .filter(line => !line.includes("oneDNN custom operations") && !line.includes("Compiled the loaded model"))
+      .join("\n");
+
+    if (error && !stdout) {
+      console.error("Erro no exec:", error);
+      return res.status(500).json({ erro: error.message, stderr: filteredStderr });
+    }
+
+    try {
+      const resultado = JSON.parse(stdout);
+      res.json(resultado);
+    } catch (e) {
+      console.error("Erro ao interpretar saída da IA:", stdout);
+      res.status(500).json({ erro: "Erro ao interpretar saída da IA", stdout, stderr: filteredStderr });
+    }
+  });
+});
+
+// -------------------- INICIA SERVIDOR --------------------
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);
 });
