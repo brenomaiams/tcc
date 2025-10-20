@@ -9,6 +9,12 @@ import multer from "multer";
 import { exec } from "child_process";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url"; // ✅ Import necessário para corrigir __dirname
+
+// -------------------- CORREÇÃO DO __dirname --------------------
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// ---------------------------------------------------------------
 
 const app = express();
 const port = 3001;
@@ -17,8 +23,8 @@ const port = 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Serve arquivos estáticos (imagens do histórico)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ✅ Corrigido — agora o servidor encontra as imagens corretamente
+app.use("/uploads\historico", express.static(path.join(__dirname, "uploads")));
 
 // Upload temporário
 const upload = multer({ dest: "uploads/" });
@@ -28,10 +34,10 @@ const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "123456789",
-  database: "praga"
+  database: "praga",
 });
 
-db.connect(err => {
+db.connect((err) => {
   if (err) throw err;
   console.log("Conectado ao MySQL!");
 });
@@ -45,11 +51,14 @@ app.post("/register", async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const sql = "INSERT INTO users (name, email, password, phone) VALUES (?, ?, ?, ?)";
+    const sql =
+      "INSERT INTO users (name, email, password, phone) VALUES (?, ?, ?, ?)";
     db.query(sql, [name, email, hashedPassword, phone], (err) => {
       if (err) {
         if (err.code === "ER_DUP_ENTRY") {
-          return res.status(400).json({ message: "Email ou telefone já cadastrado!" });
+          return res
+            .status(400)
+            .json({ message: "Email ou telefone já cadastrado!" });
         }
         return res.status(500).json({ message: "Erro no servidor", error: err });
       }
@@ -64,18 +73,23 @@ app.post("/register", async (req, res) => {
 // -------------------- LOGIN --------------------
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: "Preencha todos os campos!" });
+  if (!email || !password)
+    return res.status(400).json({ message: "Preencha todos os campos!" });
 
   const sql = "SELECT * FROM users WHERE email = ?";
   db.query(sql, [email], async (err, results) => {
     if (err) return res.status(500).json({ message: "Erro no servidor", error: err });
-    if (results.length === 0) return res.status(400).json({ message: "Email não encontrado!" });
+    if (results.length === 0)
+      return res.status(400).json({ message: "Email não encontrado!" });
 
     const user = results[0];
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ message: "Senha incorreta!" });
 
-    res.json({ message: "Login realizado com sucesso!", user: { id: user.id, name: user.name, email: user.email, phone: user.phone } });
+    res.json({
+      message: "Login realizado com sucesso!",
+      user: { id: user.id, name: user.name, email: user.email, phone: user.phone },
+    });
   });
 });
 
@@ -88,7 +102,8 @@ app.put("/update-user", async (req, res) => {
 
   db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
     if (err) return res.status(500).json({ message: "Erro no servidor", error: err });
-    if (results.length === 0) return res.status(400).json({ message: "Usuário não encontrado" });
+    if (results.length === 0)
+      return res.status(400).json({ message: "Usuário não encontrado" });
 
     const user = results[0];
     const match = await bcrypt.compare(password, user.password);
@@ -119,7 +134,10 @@ app.post("/request-password-code", (req, res) => {
       console.log(`Código enviado para ${digits}: ${code}`);
       try {
         const numeroFormatado = `${digits}@c.us`;
-        await whatsappClient.sendMessage(numeroFormatado, `🔐 Seu código de verificação é: ${code}`);
+        await whatsappClient.sendMessage(
+          numeroFormatado,
+          `🔐 Seu código de verificação é: ${code}`
+        );
         res.json({ message: "Código enviado com sucesso via WhatsApp!" });
       } catch (wppErr) {
         console.error("Erro ao enviar WhatsApp:", wppErr);
@@ -132,14 +150,17 @@ app.post("/request-password-code", (req, res) => {
 // -------------------- VERIFICAÇÃO DO CÓDIGO --------------------
 app.post("/verify-password-code", (req, res) => {
   const { phone, code } = req.body;
-  if (!phone || !code) return res.status(400).json({ message: "Dados incompletos" });
+  if (!phone || !code)
+    return res.status(400).json({ message: "Dados incompletos" });
 
   db.query("SELECT sms_code FROM users WHERE phone = ?", [phone], (err, results) => {
     if (err) return res.status(500).json({ message: "Erro no servidor", error: err });
-    if (results.length === 0) return res.status(400).json({ message: "Telefone não cadastrado" });
+    if (results.length === 0)
+      return res.status(400).json({ message: "Telefone não cadastrado" });
 
     const user = results[0];
-    if (user.sms_code !== code) return res.status(400).json({ message: "Código incorreto" });
+    if (user.sms_code !== code)
+      return res.status(400).json({ message: "Código incorreto" });
 
     res.json({ message: "Código válido" });
   });
@@ -148,16 +169,17 @@ app.post("/verify-password-code", (req, res) => {
 // -------------------- ALTERAR SENHA --------------------
 app.put("/update-password-by-phone", async (req, res) => {
   const { phone, newPassword } = req.body;
-  if (!phone || !newPassword) return res.status(400).json({ message: "Dados incompletos" });
+  if (!phone || !newPassword)
+    return res.status(400).json({ message: "Dados incompletos" });
 
   try {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
     db.query(
       "UPDATE users SET password = ?, sms_code = NULL WHERE phone = ?",
       [hashedPassword, phone],
       (err) => {
-        if (err) return res.status(500).json({ message: "Erro ao atualizar senha", error: err });
+        if (err)
+          return res.status(500).json({ message: "Erro ao atualizar senha", error: err });
         res.json({ message: "Senha alterada com sucesso!" });
       }
     );
@@ -178,14 +200,18 @@ app.post("/analisar", upload.single("file"), (req, res) => {
   if (!fs.existsSync(storageDir)) fs.mkdirSync(storageDir, { recursive: true });
 
   const finalPath = path.join(storageDir, Date.now() + "-" + originalName);
-  fs.copyFileSync(tempPath, finalPath); // Salva imagem permanentemente
+  fs.copyFileSync(tempPath, finalPath);
 
   exec(`python "ml_model/pragas.py" "${tempPath}"`, (error, stdout, stderr) => {
-    fs.unlinkSync(tempPath); // Remove temporário
+    fs.unlinkSync(tempPath);
 
     const filteredStderr = stderr
       .split("\n")
-      .filter(line => !line.includes("oneDNN custom operations") && !line.includes("Compiled the loaded model"))
+      .filter(
+        (line) =>
+          !line.includes("oneDNN custom operations") &&
+          !line.includes("Compiled the loaded model")
+      )
       .join("\n");
 
     if (error && !stdout) {
@@ -197,8 +223,8 @@ app.post("/analisar", upload.single("file"), (req, res) => {
       const resultado = JSON.parse(stdout);
       const { classe, confianca } = resultado;
 
-      // Salva no histórico
-      const sql = "INSERT INTO historico (filename, filepath, classe, confianca, created_at) VALUES (?, ?, ?, ?, NOW())";
+      const sql =
+        "INSERT INTO historico (filename, filepath, classe, confianca, created_at) VALUES (?, ?, ?, ?, NOW())";
       db.query(sql, [originalName, finalPath, classe, confianca], (err) => {
         if (err) console.error("Erro ao salvar histórico:", err);
       });
@@ -206,7 +232,11 @@ app.post("/analisar", upload.single("file"), (req, res) => {
       res.json(resultado);
     } catch (e) {
       console.error("Erro ao interpretar saída da IA:", stdout);
-      res.status(500).json({ erro: "Erro ao interpretar saída da IA", stdout, stderr: filteredStderr });
+      res.status(500).json({
+        erro: "Erro ao interpretar saída da IA",
+        stdout,
+        stderr: filteredStderr,
+      });
     }
   });
 });
@@ -222,8 +252,6 @@ app.get("/historico", (req, res) => {
     res.json(results);
   });
 });
-
-
 
 // -------------------- INICIA SERVIDOR --------------------
 app.listen(port, () => {
