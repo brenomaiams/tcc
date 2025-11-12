@@ -24,7 +24,8 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // ✅ Corrigido — agora o servidor encontra as imagens corretamente
-app.use("/uploads\historico", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads/historico", express.static(path.join(__dirname, "uploads/historico")));
+
 
 // Upload temporário
 const upload = multer({ dest: "uploads/" });
@@ -33,8 +34,8 @@ const upload = multer({ dest: "uploads/" });
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "123456789",
-  database: "praga",
+  password: "123456",
+  database: "tccpraga",
 });
 
 db.connect((err) => {
@@ -223,35 +224,93 @@ app.post("/analisar", upload.single("file"), (req, res) => {
       const resultado = JSON.parse(stdout);
       const { classe, confianca } = resultado;
 
-      const sql =
-        "INSERT INTO historico (filename, filepath, classe, confianca, created_at) VALUES (?, ?, ?, ?, NOW())";
-      db.query(sql, [originalName, finalPath, classe, confianca], (err) => {
-        if (err) console.error("Erro ao salvar histórico:", err);
-      });
+      // 🔍 Busca na tabela pragas_info
+      db.query(
+        "SELECT nome, imagem, prevencao, combate FROM pragas_info WHERE nome = ?",
+        [classe],
+        (err, results) => {
+          if (err) {
+            console.error("Erro ao buscar informações da praga:", err);
+            return res.status(500).json({ erro: "Erro ao buscar informações da praga" });
+          }
 
-      res.json(resultado);
+          const info = results[0] || {
+            nome: classe,
+            imagem: "uploads/pragas/desconhecida.jpg",
+            prevencao: "Informações de prevenção não disponíveis.",
+            combate: "Consulte um especialista para orientações específicas."
+          };
+
+          // Salva histórico no banco
+          const sql =
+            "INSERT INTO historico (filename, filepath, classe, confianca, created_at) VALUES (?, ?, ?, ?, NOW())";
+          db.query(sql, [originalName, finalPath, classe, confianca], (err2) => {
+            if (err2) console.error("Erro ao salvar histórico:", err2);
+          });
+
+          res.json({
+            classe: info.nome,
+            confianca,
+            imagem: info.imagem,
+            prevencao: info.prevencao,
+            combate: info.combate
+          });
+        }
+      );
     } catch (e) {
       console.error("Erro ao interpretar saída da IA:", stdout);
       res.status(500).json({
         erro: "Erro ao interpretar saída da IA",
         stdout,
-        stderr: filteredStderr,
+        stderr: filteredStderr
       });
     }
   });
 });
 
-// -------------------- LISTAR HISTÓRICO --------------------
+
+// -------------------- LISTAR HISTÓRICO COM INFORMAÇÕES DE PRAGAS --------------------
 app.get("/historico", (req, res) => {
-  const sql = "SELECT * FROM historico ORDER BY created_at DESC";
+  const sql = `
+    SELECT 
+      h.id,
+      h.filename,
+      h.filepath,
+      h.classe,
+      h.confianca,
+      h.created_at,
+      p.prevencao AS prevencao,
+      p.combate AS combate,
+      p.imagem AS imagem_praga
+    FROM historico h
+    LEFT JOIN pragas_info p 
+      ON LOWER(REPLACE(REPLACE(TRIM(h.classe), '-', ''), ' ', '')) =
+         LOWER(REPLACE(REPLACE(TRIM(p.nome), '-', ''), ' ', ''))
+    ORDER BY h.created_at DESC
+  `;
+
+  console.log("Executando SQL JOIN de histórico...");
+
   db.query(sql, (err, results) => {
     if (err) {
       console.error("Erro ao buscar histórico:", err);
       return res.status(500).json({ message: "Erro ao buscar histórico", error: err });
     }
-    res.json(results);
+
+    console.log("Resultados do SQL:", results);
+
+    const formatted = results.map((item) => ({
+      ...item,
+      filepath: item.filepath
+        ? item.filepath.replace(/^.*uploads[\\/]/, "uploads/")
+        : null,
+    }));
+
+    res.json(formatted);
   });
 });
+
+
 
 // -------------------- INICIA SERVIDOR --------------------
 app.listen(port, () => {

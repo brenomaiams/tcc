@@ -8,10 +8,12 @@ import UserAvatar from "../../assets/logotcc.png";
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [showProfileMenu, setShowProfileMenu] = useState<boolean>(false);
   const [resultado, setResultado] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [showModal, setShowModal] = useState<boolean>(false);
 
   useEffect(() => {
     const user = localStorage.getItem("user");
@@ -23,8 +25,10 @@ const Home: React.FC = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-      setResultado(null); // limpa resultado anterior
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setPreviewImage(URL.createObjectURL(file));
+      setResultado(null);
     }
   };
 
@@ -40,12 +44,22 @@ const Home: React.FC = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setResultado(res.data);
+      setShowModal(true);
     } catch (err) {
-      console.error("Erro ao enviar a imagem", err);
+      console.error("Erro ao enviar imagem:", err);
       alert("Erro ao enviar a imagem para análise.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+
+    // Limpa os dados para permitir novo envio
+    setSelectedFile(null);
+    setPreviewImage(null);
+    setResultado(null);
   };
 
   const toggleProfileMenu = () => {
@@ -57,12 +71,11 @@ const Home: React.FC = () => {
     setShowProfileMenu(false);
   };
 
-  const capitalizeName = (name: string) => {
-    return name
+  const capitalizeName = (name: string) =>
+    name
       .split(" ")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
-  };
 
   return (
     <div className="home-container">
@@ -110,18 +123,6 @@ const Home: React.FC = () => {
               {loading ? "Analisando..." : "Enviar"}
             </button>
           )}
-
-          {resultado && (
-            <div className="resultado-container">
-              <h3>Resultado da análise:</h3>
-              <p>
-                <b>Classe:</b> {resultado.classe}
-              </p>
-              <p>
-                <b>Confiança:</b> {(resultado.confianca * 100).toFixed(2)}%
-              </p>
-            </div>
-          )}
         </section>
 
         {/* Histórico */}
@@ -135,6 +136,42 @@ const Home: React.FC = () => {
           </button>
         </section>
       </main>
+
+      {/* Modal do resultado */}
+      {showModal && resultado && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2>Resultado da Análise</h2>
+            <p>
+              <b>Praga identificada:</b> {resultado.classe}
+            </p>
+            <p>
+              <b>Confiança:</b> {(resultado.confianca * 100).toFixed(2)}%
+            </p>
+
+            {previewImage && (
+              <img
+                src={previewImage}
+                alt="Imagem enviada"
+                className="modal-image"
+              />
+            )}
+
+            <h3>Prevenção</h3>
+            <p>{resultado.prevencao}</p>
+
+            <h3>Combate</h3>
+            <p>{resultado.combate}</p>
+
+            <button className="button close-button" onClick={handleCloseModal}>
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,32 +1,108 @@
 .historico-container {
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.historico-container h2 {
+  text-align: center;
+  margin-bottom: 24px;
+  color: #1c3e15;
+  font-size: 1.8rem;
 }
 
 .historico-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 20px;
+  justify-content: center;
 }
 
 .historico-card {
-  width: 200px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid #ddd;
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
   background-color: #fff;
+  transition: transform 0.2s ease;
+}
+
+.historico-card:hover {
+  transform: translateY(-4px);
 }
 
 .historico-card img {
   width: 100%;
-  height: 150px;
+  height: 180px;
   object-fit: cover;
 }
 
 .historico-info {
-  padding: 10px;
+  padding: 14px;
 }
 
 .historico-info p {
-  margin: 5px 0;
+  margin: 6px 0;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.4;
+}
+
+.historico-prevencao, .historico-combate {
+  margin-top: 12px;
+  background: #f9f9f9;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.historico-prevencao h4,
+.historico-combate h4 {
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1c3e15;
+}
+
+.historico-prevencao p,
+.historico-combate p {
+  font-size: 13px;
+  color: #555;
+}
+
+/* 🔹 Responsividade */
+@media (max-width: 768px) {
+  .historico-container {
+    padding: 10px;
+  }
+
+  .historico-container h2 {
+    font-size: 1.4rem;
+  }
+
+  .historico-card img {
+    height: 150px;
+  }
+
+  .historico-info p {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .historico-card {
+    width: 100%;
+  }
+
+  .historico-container h2 {
+    font-size: 1.2rem;
+  }
+
+  .historico-info {
+    padding: 10px;
+  }
+
+  .historico-prevencao p,
+  .historico-combate p {
+    font-size: 12px;
+  }
 }

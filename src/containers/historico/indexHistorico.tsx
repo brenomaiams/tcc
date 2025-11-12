@@ -9,6 +9,8 @@ interface HistoricoItem {
   classe: string;
   confianca: number;
   created_at: string;
+  prevencao?: string;
+  combate?: string;
 }
 
 const Historico: React.FC = () => {
@@ -18,8 +20,9 @@ const Historico: React.FC = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3001/historico") // rota do backend
+      .get("http://localhost:3001/historico")
       .then((res) => {
+         console.log("🔍 Dados recebidos do backend:", res.data);
         setHistorico(res.data);
         setLoading(false);
       })
@@ -40,8 +43,8 @@ const Historico: React.FC = () => {
 
       <div className="historico-list">
         {historico.map((item) => {
-          // Monta o caminho completo da imagem
-          const imageUrl = `http://localhost:3001/uploads/historico/${item.filepath}`;
+          const imageUrl = `http://localhost:3001/${item.filepath.replace(/\\/g, "/")}`;
+
 
           return (
             <div key={item.id} className="historico-card">
@@ -50,25 +53,27 @@ const Historico: React.FC = () => {
                 alt={item.filename}
                 onError={(e) => {
                   const img = e.target as HTMLImageElement;
-                  // Evita loop infinito no onError
                   if (img.src !== window.location.origin + "/placeholder.png") {
                     console.warn("Imagem não encontrada:", imageUrl);
-                    img.src = "/placeholder.png"; // imagem padrão
+                    img.src = "/placeholder.png";
                   }
                 }}
               />
+
               <div className="historico-info">
-                <p>
-                  <strong>Classe:</strong> {item.classe}
-                </p>
-                <p>
-                  <strong>Confiança:</strong>{" "}
-                  {(item.confianca * 100).toFixed(2)}%
-                </p>
-                <p>
-                  <strong>Data:</strong>{" "}
-                  {new Date(item.created_at).toLocaleString()}
-                </p>
+                <p><strong>Praga:</strong> {item.classe}</p>
+                <p><strong>Confiança:</strong> {(item.confianca * 100).toFixed(2)}%</p>
+                <p><strong>Data:</strong> {new Date(item.created_at).toLocaleString()}</p>
+
+                <div className="historico-prevencao">
+                  <h4>Prevenção</h4>
+                  <p>{item.prevencao || "Informação não disponível."}</p>
+                </div>
+
+                <div className="historico-combate">
+                  <h4>Combate</h4>
+                  <p>{item.combate || "Informação não disponível."}</p>
+                </div>
               </div>
             </div>
           );
