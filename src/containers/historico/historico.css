@@ -1,16 +1,36 @@
+/* 🌾 Tema Agro Verde e Branco */
+body {
+  background: linear-gradient(135deg, #d9fdd3, #085a01);
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #1c3e15;
+}
+
+/* Container principal */
 .historico-container {
   padding: 20px;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 30px auto;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0, 80, 0, 0.15);
 }
 
+/* Título */
 .historico-container h2 {
   text-align: center;
   margin-bottom: 24px;
   color: #1c3e15;
-  font-size: 1.8rem;
+  font-size: 1.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  border-bottom: 3px solid #2e8b57;
+  display: inline-block;
+  padding-bottom: 6px;
 }
 
+/* Lista de cards */
 .historico-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -18,25 +38,30 @@
   justify-content: center;
 }
 
+/* Cartões individuais */
 .historico-card {
-  border: 1px solid #ddd;
+  border: 1px solid #b2e0b2;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-  background-color: #fff;
-  transition: transform 0.2s ease;
+  background-color: #ffffff;
+  box-shadow: 0 4px 10px rgba(28, 62, 21, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
 }
 
 .historico-card:hover {
   transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(28, 62, 21, 0.2);
+  border-color: #4CAF50;
 }
 
 .historico-card img {
   width: 100%;
   height: 180px;
   object-fit: cover;
+  border-bottom: 3px solid #4CAF50;
 }
 
+/* Informações */
 .historico-info {
   padding: 14px;
 }
@@ -44,15 +69,23 @@
 .historico-info p {
   margin: 6px 0;
   font-size: 14px;
-  color: #333;
+  color: #2c2c2c;
   line-height: 1.4;
 }
 
-.historico-prevencao, .historico-combate {
+/* Seções de prevenção e combate */
+.historico-prevencao,
+.historico-combate {
   margin-top: 12px;
-  background: #f9f9f9;
+  background: #e9fbea;
   padding: 10px;
   border-radius: 10px;
+  border-left: 5px solid #4CAF50;
+}
+
+.historico-combate {
+  background: #f2fff2;
+  border-left-color: #81c784;
 }
 
 .historico-prevencao h4,
@@ -66,17 +99,18 @@
 .historico-prevencao p,
 .historico-combate p {
   font-size: 13px;
-  color: #555;
+  color: #355e3b;
 }
 
-/* 🔹 Responsividade */
+/* Responsividade */
 @media (max-width: 768px) {
   .historico-container {
     padding: 10px;
+    margin: 15px;
   }
 
   .historico-container h2 {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
   }
 
   .historico-card img {

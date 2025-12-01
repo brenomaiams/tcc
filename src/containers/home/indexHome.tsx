@@ -104,7 +104,7 @@ const Home: React.FC = () => {
       <main className="home-main">
         {/* Upload para IA */}
         <section className="home-section">
-          <h2>Enviar Foto para IA</h2>
+          <h2>Enviar Imagem para Analise</h2>
           <label className="file-label">
             {selectedFile ? selectedFile.name : "Escolher arquivo"}
             <input
@@ -172,6 +172,10 @@ const Home: React.FC = () => {
           </div>
         </div>
       )}
+
+    
+
+
     </div>
   );
 };
